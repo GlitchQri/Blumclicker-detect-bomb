@@ -40,16 +40,26 @@ max_contour_area = 1000
 # Радиус, в котором проверяется наличие бомбы
 BOMB_RADIUS = 50
 
+# Количество блумов для пропуска
+MIN_BLOOMS_TO_SKIP = 5
+MAX_BLOOMS_TO_SKIP = 17
+
 clicking_enabled = False
 program_running = True
 executor = ThreadPoolExecutor(max_workers=10)
 
+# Генерация случайного количества блумов для пропуска
+blooms_to_skip = random.randint(MIN_BLOOMS_TO_SKIP, MAX_BLOOMS_TO_SKIP)
+blooms_skipped = 0
+
 def on_press(key):
-    global clicking_enabled, program_running
+    global clicking_enabled, program_running, blooms_to_skip, blooms_skipped
     try:
         if key == ACTIVE_BTN:
             clicking_enabled = not clicking_enabled
-            print(f"Clicking enabled: {clicking_enabled}")
+            blooms_to_skip = random.randint(MIN_BLOOMS_TO_SKIP, MAX_BLOOMS_TO_SKIP)
+            blooms_skipped = 0
+            print(f"Clicking enabled: {clicking_enabled}, Blooms to skip: {blooms_to_skip}")
         elif key == EXIT_BTN:
             program_running = False
             print("Exiting program...")
@@ -82,6 +92,7 @@ def click_on_position(screen_x, screen_y):
         pyautogui.click(screen_x, screen_y + random.randint(RAND_MIN, RAND_MAX))
 
 def click_element_contours(contours, bomb_contours):
+    global blooms_skipped, blooms_to_skip
     for cnt in contours:
         if not clicking_enabled:
             break
@@ -101,7 +112,12 @@ def click_element_contours(contours, bomb_contours):
                 print("Bomb detected near bloom, skipping click")
                 break
         else:
-            executor.submit(click_on_position, screen_x, screen_y)
+            # Случайный пропуск блумов
+            if blooms_skipped < blooms_to_skip:
+                blooms_skipped += 1
+                print(f"Bloom skipped: {blooms_skipped}/{blooms_to_skip}")
+            else:
+                executor.submit(click_on_position, screen_x, screen_y)
 
 def capture_and_process():
     global program_running
